@@ -105,6 +105,21 @@
         line: 'bind-address = 0.0.0.0'
       notify: Restart MySQL
 
+    - name: Create blogging database
+      community.mysql.mysql_db:
+        name: blogdb
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Create blogging database user
+      community.mysql.mysql_user:
+        name: bloguser
+        password: blogpass
+        host: "%"
+        priv: "blogdb.*:ALL"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
   handlers:
     - name: Restart MySQL
       systemd:
