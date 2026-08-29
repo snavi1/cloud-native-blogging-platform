@@ -1,5 +1,3 @@
-cd ~/cloud-native-blogging-platform
-cat > Jenkinsfile <<'EOF'
 pipeline {
     agent any
 
@@ -105,4 +103,3 @@ pipeline {
         }
     }
 }
-EOF
