@@ -1,0 +1,47 @@
+---
+- name: Deploy Blogging Platform
+  hosts: application
+  become: true
+
+  tasks:
+
+    - name: Create application directory
+      file:
+        path: /opt/blogging-platform
+        state: directory
+        mode: '0755'
+
+    - name: Create docker compose file
+      copy:
+        dest: /opt/blogging-platform/docker-compose.yml
+        content: |
+          services:
+
+            frontend:
+              image: YOUR_DOCKERHUB_USERNAME/blog-frontend:latest
+              container_name: blog-frontend
+              ports:
+                - "80:80"
+              depends_on:
+                - backend
+
+            backend:
+              image: YOUR_DOCKERHUB_USERNAME/blog-backend:latest
+              container_name: blog-backend
+              ports:
+                - "5000:5000"
+              environment:
+                DB_HOST: 10.0.2.149
+                DB_USER: bloguser
+                DB_PASSWORD: blogpass
+                DB_NAME: blogdb
+
+    - name: Pull latest images
+      command:
+        cmd: docker compose pull
+        chdir: /opt/blogging-platform
+
+    - name: Start application
+      command:
+        cmd: docker compose up -d
+        chdir: /opt/blogging-platform

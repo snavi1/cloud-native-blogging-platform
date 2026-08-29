@@ -1,0 +1,127 @@
+---
+- name: Configure Bastion / DevOps Node
+  hosts: bastion
+  become: true
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - docker.io
+          - git
+          - openjdk-21-jre
+          - curl
+          - wget
+        state: present
+        update_cache: true
+
+    - name: Enable Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: true
+
+    - name: Add Jenkins repository key
+      shell: |
+        curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key \
+        -o /usr/share/keyrings/jenkins-keyring.asc
+      args:
+        creates: /usr/share/keyrings/jenkins-keyring.asc
+
+    - name: Add Jenkins repository
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/"
+        state: present
+        filename: jenkins
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+        update_cache: true
+
+    - name: Enable Jenkins
+      systemd:
+        name: jenkins
+        state: started
+        enabled: true
+
+
+- name: Configure Application Node
+  hosts: application
+  become: true
+
+  tasks:
+    - name: Install Docker
+      apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+        state: present
+        update_cache: true
+
+    - name: Enable Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: true
+
+
+- name: Configure Database Node
+  hosts: database
+  become: true
+
+  tasks:
+    - name: Install MySQL
+      apt:
+        name:
+          - mysql-server
+          - python3-pymysql
+        state: present
+        update_cache: true
+
+    - name: Enable MySQL
+      systemd:
+        name: mysql
+        state: started
+        enabled: true
+
+    - name: Configure MySQL to listen on all interfaces
+      lineinfile:
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf
+        regexp: '^bind-address'
+        line: 'bind-address = 0.0.0.0'
+      notify: Restart MySQL
+
+  handlers:
+    - name: Restart MySQL
+      systemd:
+        name: mysql
+        state: restarted
+
+    - name: Create blogging database
+      community.mysql.mysql_db:
+        name: blogdb
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Create blogging database user
+      community.mysql.mysql_user:
+        name: bloguser
+        password: blogpass
+        host: "%"
+        priv: "blogdb.*:ALL"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cloud-Native Blogging Platform</title>
+    <style>
+        body {
+            font-family: Arial;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .post {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>☁️ Cloud-Native Blogging Platform</h1>
+<p>Deployed using Terraform + Ansible + Jenkins</p>
+
+<div id="posts">Loading posts...</div>
+
+<script>
+fetch('/api/posts')
+    .then(response => response.json())
+    .then(posts => {
+        const container = document.getElementById('posts');
+
+        if (posts.error) {
+            container.innerHTML = '<p>Database connection: ' + posts.error + '</p>';
+            return;
+        }
+
+        container.innerHTML = posts.map(post => `
+            <div class="post">
+                <h2>${post.title}</h2>
+                <p>${post.content}</p>
+            </div>
+        `).join('');
+    })
+    .catch(error => {
+        document.getElementById('posts').innerHTML =
+            '<p>Backend unavailable</p>';
+    });
+</script>
+
+</body>
+</html>
